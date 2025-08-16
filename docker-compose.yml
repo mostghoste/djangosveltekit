@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:17.6
+    container_name: dsk_db
+    env_file: [.env]
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [stack]
+
+  redis:
+    image: redis:7-alpine
+    container_name: dsk_redis
+    networks: [stack]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dsk_backend
+    env_file: [.env]
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_URL: ${REDIS_URL}
+    depends_on: [db, redis]
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        daphne -b 0.0.0.0 -p 8000 backend.asgi:application
+      "
+    ports: ["8000:8000"]
+    volumes:
+      - ./backend:/app
+    networks: [stack]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:8000"
+    container_name: dsk_frontend
+    depends_on: [backend]
+    ports: ["3000:80"]
+    networks: [stack]
+
+networks:
+  stack:
+
+volumes:
+  pgdata:
