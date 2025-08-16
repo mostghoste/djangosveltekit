@@ -20,6 +20,9 @@ services:
       - ./backend/media:/app/media
     expose:
       - "${BACKEND_PORT:-8000}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.cs2clog-backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
     networks:
       - internal
 
@@ -37,7 +40,10 @@ services:
     depends_on:
       - backend
     expose:
-      - "3000" # <-- important
+      - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.cs2clog-frontend.loadbalancer.server.port=3000
     networks:
       - internal
 
