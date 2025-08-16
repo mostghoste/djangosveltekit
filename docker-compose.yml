@@ -11,13 +11,14 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
     depends_on:
       - db
     volumes:
       - ./backend/staticfiles:/app/staticfiles
       - ./backend/media:/app/media
     ports:
-      - "${BACKEND_HOST_PORT:-8081}:8000"
+      - "${BACKEND_PUBLIC_PORT:-8081}:${BACKEND_PORT:-8000}"
     networks:
       - internal
 
@@ -30,11 +31,9 @@ services:
       - .env
     environment:
       - ORIGIN=${FRONTEND_URL}
-      - BACKEND_URL=http://backend:${BACKEND_HOST_PORT:-8081}
+      - BACKEND_URL=http://backend:${BACKEND_PORT:-8000}
     depends_on:
       - backend
-    ports:
-      - "3000:3000"
     networks:
       - internal
 
