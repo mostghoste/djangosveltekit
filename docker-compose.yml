@@ -1,64 +1,48 @@
 services:
-  db:
-    image: postgres:17.6
-    container_name: dsk_db
-    env_file: [.env]
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks: [stack]
-
-  redis:
-    image: redis:7-alpine
-    container_name: dsk_redis
-    networks: [stack]
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dsk_backend
-    env_file: [.env]
+    restart: unless-stopped
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-      DJANGO_DEBUG: ${DJANGO_DEBUG}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      REDIS_URL: ${REDIS_URL}
-    depends_on: [db, redis]
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        daphne -b 0.0.0.0 -p 8000 backend.asgi:application
-      "
-    ports: ["8000:8000"]
-    volumes:
-      - ./backend:/app
-    networks: [stack]
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
+    depends_on:
+      - db
+    networks:
+      - internal
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: "http://localhost:8000"
-    container_name: dsk_frontend
-    depends_on: [backend]
-    environment:
-      PORT: 3000
+    restart: unless-stopped
     ports:
-      - "3000:3000" # Node server listens on 3000 (not 80)
-    networks: [stack]
+      - "3000:3000"
+    environment:
+      - ORIGIN=${FRONTEND_URL}
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
 networks:
-  stack:
+  internal:
+    driver: bridge
 
 volumes:
-  pgdata:
+  postgres_data:

@@ -1,10 +1,6 @@
-import adapter from '@sveltejs/adapter-node';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import adapter from '@sveltejs/adapter-auto';
 
-export default {
-  preprocess: vitePreprocess(),
-  kit: {
-    adapter: adapter({ out: 'build', precompress: true }),
-    alias: { $lib: 'src/lib' }
-  }
-};
+/** @type {import('@sveltejs/kit').Config} */
+const config = { kit: { adapter: adapter() } };
+
+export default config;

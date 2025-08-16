@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+import os
+import sys
+import argparse
+import pyperclip
+from pathlib import Path
+
+EXCLUDE_PATTERNS = [
+    '__pycache__',
+    'node_modules',
+    '.git',
+    '.env',
+    'package-lock.json',
+    'yarn.lock',
+    '.DS_Store',
+    '*.pyc',
+    '.coverage',
+    'htmlcov',
+    'dist',
+    'build',
+    '.svelte-kit',
+    'venv',
+    '.venv',
+    'staticfiles',
+    'media',
+    '*.sqlite3',
+    '*.svg',
+    '.prettierignore',
+    '.npmrc'
+]
+
+def should_include_file(path):
+    path_str = str(path)
+    return not any(
+        pattern in path_str 
+        for pattern in EXCLUDE_PATTERNS
+    )
+
+def collect_text(directory):
+    collected_text = []
+    file_count = 0
+    
+    for path in Path(directory).rglob('*'):
+        if path.is_file() and should_include_file(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    collected_text.append(f'// File: {path}\n{content}\n')
+                    file_count += 1
+            except UnicodeDecodeError:
+                continue
+    
+    return '\n'.join(collected_text), file_count
+
+def main():
+    parser = argparse.ArgumentParser(description='Collect and copy codebase text')
+    parser.add_argument('--frontend', action='store_true', help='Only copy frontend files')
+    parser.add_argument('--backend', action='store_true', help='Only copy backend files')
+    
+    args = parser.parse_args()
+    
+    base_dir = Path(__file__).parent
+    
+    if args.frontend:
+        directory = base_dir / 'frontend'
+    elif args.backend:
+        directory = base_dir / 'backend'
+    else:
+        directory = base_dir
+    
+    text, file_count = collect_text(directory)
+    text_length = len(text)
+    
+    pyperclip.copy(text)
+    
+    print(f'Copied {file_count} files ({text_length} characters) to clipboard')
+    print(f'From directory: {directory}')
+
+if __name__ == '__main__':
+    main()
