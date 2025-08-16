@@ -30,7 +30,7 @@ services:
       - .env
     environment:
       - ORIGIN=${FRONTEND_URL}
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:${BACKEND_HOST_PORT:-8081}
     depends_on:
       - backend
     ports:
