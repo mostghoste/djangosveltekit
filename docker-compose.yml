@@ -19,7 +19,7 @@ services:
       - ./backend/staticfiles:/app/staticfiles
       - ./backend/media:/app/media
     expose:
-      - "${BACKEND_PORT:-8000}" # <-- important
+      - "${BACKEND_PORT:-8000}"
     networks:
       - internal
 
