@@ -28,9 +28,13 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True if DEBUG else False
-CORS_ALLOWED_ORIGINS = []  # set your frontend origin(s) in prod if you turn off allow-all
-
+# CORS: allow all in DEBUG; otherwise read the list
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [o for o in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if o]
+    CORS_ALLOW_ALL_ORIGINS = False
+    
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [{

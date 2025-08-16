@@ -52,9 +52,11 @@ services:
         VITE_API_BASE_URL: "http://localhost:8000"
     container_name: dsk_frontend
     depends_on: [backend]
-    ports: ["3000:80"]
+    environment:
+      PORT: 3000
+    ports:
+      - "3000:3000" # Node server listens on 3000 (not 80)
     networks: [stack]
-
 networks:
   stack:
 
