@@ -26,7 +26,7 @@ services:
       - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
 
       # Service (internal container port Traefik should hit)
-      - traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
+      - traefik.http.services.backend.loadbalancer.server.port=8000
 
       # HTTPS router (Coolify/prod)
       - traefik.http.routers.backend.rule=Host(`${BACKEND_HOST}`)
@@ -38,6 +38,9 @@ services:
       - traefik.http.routers.backend-http.rule=Host(`${BACKEND_HOST}`)
       - traefik.http.routers.backend-http.entryPoints=http
       - traefik.http.routers.backend-http.middlewares=redirect-https
+
+      - traefik.http.middlewares.redirect-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.redirect-https.redirectscheme.permanent=true
 
   frontend:
     build:
