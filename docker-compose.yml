@@ -18,25 +18,26 @@ services:
       - ./backend/staticfiles:/app/staticfiles
       - ./backend/media:/app/media
     expose:
-      - "8000"
-    networks: [internal, coolify]
+      - "${BACKEND_PORT:-8000}"
+    networks: [internal, proxy]
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=coolify
-      # service (which port Traefik should hit inside the container)
-      - traefik.http.services.cs2clog-backend.loadbalancer.server.port=8000
-      # HTTPS router for api.cs2clog.com
-      - traefik.http.routers.cs2clog-backend.rule=Host(`api.cs2clog.com`)
-      - traefik.http.routers.cs2clog-backend.entryPoints=https
-      - traefik.http.routers.cs2clog-backend.tls=true
-      - traefik.http.routers.cs2clog-backend.service=cs2clog-backend
-      # HTTP router -> redirect to HTTPS
-      - traefik.http.routers.cs2clog-backend-http.rule=Host(`api.cs2clog.com`)
-      - traefik.http.routers.cs2clog-backend-http.entryPoints=http
-      - traefik.http.routers.cs2clog-backend-http.middlewares=cs2clog-https-redirect
-      # Define the redirect middleware
-      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.permanent=true
+      # Traefik is OFF by default locally; turn ON in Coolify by setting TRAEFIK_ENABLE=true
+      - traefik.enable=${TRAEFIK_ENABLE:-false}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+
+      # Service (internal container port Traefik should hit)
+      - traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
+
+      # HTTPS router (Coolify/prod)
+      - traefik.http.routers.backend.rule=Host(`${BACKEND_HOST}`)
+      - traefik.http.routers.backend.entryPoints=https
+      - traefik.http.routers.backend.tls=true
+      - traefik.http.routers.backend.service=backend
+
+      # HTTP -> HTTPS redirect (Coolify/prod)
+      - traefik.http.routers.backend-http.rule=Host(`${BACKEND_HOST}`)
+      - traefik.http.routers.backend-http.entryPoints=http
+      - traefik.http.routers.backend-http.middlewares=redirect-https
 
   frontend:
     build:
@@ -50,21 +51,21 @@ services:
     depends_on: [backend]
     expose:
       - "3000"
-    networks: [internal, coolify]
+    networks: [internal, proxy]
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=coolify
-      # service (port inside the container)
-      - traefik.http.services.cs2clog-frontend.loadbalancer.server.port=3000
-      # HTTPS router for cs2clog.com
-      - traefik.http.routers.cs2clog-frontend.rule=Host(`cs2clog.com`)
-      - traefik.http.routers.cs2clog-frontend.entryPoints=https
-      - traefik.http.routers.cs2clog-frontend.tls=true
-      - traefik.http.routers.cs2clog-frontend.service=cs2clog-frontend
-      # HTTP router -> redirect to HTTPS
-      - traefik.http.routers.cs2clog-frontend-http.rule=Host(`cs2clog.com`)
-      - traefik.http.routers.cs2clog-frontend-http.entryPoints=http
-      - traefik.http.routers.cs2clog-frontend-http.middlewares=cs2clog-https-redirect
+      - traefik.enable=${TRAEFIK_ENABLE:-false}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+
+      - traefik.http.routers.frontend.rule=Host(`${FRONTEND_HOST}`)
+      - traefik.http.routers.frontend.entryPoints=https
+      - traefik.http.routers.frontend.tls=true
+      - traefik.http.routers.frontend.service=frontend
+
+      - traefik.http.routers.frontend-http.rule=Host(`${FRONTEND_HOST}`)
+      - traefik.http.routers.frontend-http.entryPoints=http
+      - traefik.http.routers.frontend-http.middlewares=redirect-https
 
   db:
     image: postgres:15-alpine
@@ -81,9 +82,12 @@ services:
 networks:
   internal:
     driver: bridge
-  coolify:
-    external: true
-    name: coolify
+
+  # In Coolify set: USE_COOLIFY=true and TRAEFIK_NETWORK=coolify
+  # Locally: USE_COOLIFY=false (default) -> a normal local "proxy" network is created so compose doesn't fail.
+  proxy:
+    external: ${USE_COOLIFY:-false}
+    name: ${TRAEFIK_NETWORK:-proxy}
 
 volumes:
   postgres_data:
