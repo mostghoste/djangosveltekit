@@ -18,25 +18,25 @@ services:
       - ./backend/staticfiles:/app/staticfiles
       - ./backend/media:/app/media
     expose:
-      - "${BACKEND_PORT:-8000}"
+      - "8000"
     networks: [internal, coolify]
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
-
       # service (which port Traefik should hit inside the container)
-      - traefik.http.services.cs2clog-backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
-
+      - traefik.http.services.cs2clog-backend.loadbalancer.server.port=8000
       # HTTPS router for api.cs2clog.com
       - traefik.http.routers.cs2clog-backend.rule=Host(`api.cs2clog.com`)
       - traefik.http.routers.cs2clog-backend.entryPoints=https
       - traefik.http.routers.cs2clog-backend.tls=true
       - traefik.http.routers.cs2clog-backend.service=cs2clog-backend
-
       # HTTP router -> redirect to HTTPS
       - traefik.http.routers.cs2clog-backend-http.rule=Host(`api.cs2clog.com`)
       - traefik.http.routers.cs2clog-backend-http.entryPoints=http
-      - traefik.http.routers.cs2clog-backend-http.middlewares=cs2clog-https-redirect@docker
+      - traefik.http.routers.cs2clog-backend-http.middlewares=cs2clog-https-redirect
+      # Define the redirect middleware
+      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.permanent=true
 
   frontend:
     build:
@@ -54,24 +54,17 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
-
       # service (port inside the container)
       - traefik.http.services.cs2clog-frontend.loadbalancer.server.port=3000
-
       # HTTPS router for cs2clog.com
       - traefik.http.routers.cs2clog-frontend.rule=Host(`cs2clog.com`)
       - traefik.http.routers.cs2clog-frontend.entryPoints=https
       - traefik.http.routers.cs2clog-frontend.tls=true
       - traefik.http.routers.cs2clog-frontend.service=cs2clog-frontend
-
       # HTTP router -> redirect to HTTPS
       - traefik.http.routers.cs2clog-frontend-http.rule=Host(`cs2clog.com`)
       - traefik.http.routers.cs2clog-frontend-http.entryPoints=http
-      - traefik.http.routers.cs2clog-frontend-http.middlewares=cs2clog-https-redirect@docker
-
-      # define the redirect middleware once (re-used above)
-      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.cs2clog-https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.cs2clog-frontend-http.middlewares=cs2clog-https-redirect
 
   db:
     image: postgres:15-alpine
