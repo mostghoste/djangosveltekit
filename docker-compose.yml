@@ -21,10 +21,13 @@ services:
       - "${BACKEND_PORT:-8000}"
     labels:
       - traefik.enable=true
+      # Router: api.cs2clog.com
+      - traefik.http.routers.cs2clog-backend.rule=Host(`api.cs2clog.com`)
+      - traefik.http.routers.cs2clog-backend.entryPoints=http,https
+      - traefik.http.routers.cs2clog-backend.tls=true
+      # Service port inside the container
       - traefik.http.services.cs2clog-backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
-    networks:
-      - internal
-      - coolify
+    networks: [internal, coolify]
 
   frontend:
     build:
@@ -40,10 +43,12 @@ services:
       - "3000"
     labels:
       - traefik.enable=true
+      # Router: cs2clog.com
+      - traefik.http.routers.cs2clog-frontend.rule=Host(`cs2clog.com`)
+      - traefik.http.routers.cs2clog-frontend.entryPoints=http,https
+      - traefik.http.routers.cs2clog-frontend.tls=true
       - traefik.http.services.cs2clog-frontend.loadbalancer.server.port=3000
-    networks:
-      - internal
-      - coolify
+    networks: [internal, coolify]
 
   db:
     image: postgres:15-alpine
