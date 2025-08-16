@@ -17,8 +17,6 @@ services:
     volumes:
       - ./backend/staticfiles:/app/staticfiles
       - ./backend/media:/app/media
-    ports:
-      - "${BACKEND_PUBLIC_PORT:-8081}:${BACKEND_PORT:-8000}"
     networks:
       - internal
 
