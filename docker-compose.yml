@@ -20,6 +20,10 @@ services:
     expose:
       - "${BACKEND_PORT:-8000}"
     networks: [internal, coolify]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.services.cs2clog-backend.loadbalancer.server.port=${BACKEND_PORT:-8000}
 
   frontend:
     build:
@@ -34,6 +38,10 @@ services:
     expose:
       - "3000"
     networks: [internal, coolify]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.services.cs2clog-frontend.loadbalancer.server.port=3000
 
   db:
     image: postgres:15-alpine
